@@ -2,16 +2,22 @@ package com.location.bitcanny.myapplicationlocationpermission;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -43,14 +49,20 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-/*
+        //
+
+
         boolean mystate = requestPermission(this,Manifest.permission.ACCESS_FINE_LOCATION,"This app needs your location access",MY_PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION);
 
         if(mystate){
             Toast.makeText(getApplicationContext(),"Permission Granted",Toast.LENGTH_LONG).show();
+            //checkGPSEnable();
+            if(!isGpsEnabled()){
+                finish();
+            }
         }else{
             Toast.makeText(getApplicationContext(),"Permission Denied",Toast.LENGTH_LONG).show();
-        }*/
+        }
 
 
 
@@ -80,12 +92,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         Log.d(TAG,"onPause");
+        unregisterReceiver(gpsStatusReceiver);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         Log.d(TAG,"onResume");
+        registerReceiver(gpsStatusReceiver,new IntentFilter(LocationManager.PROVIDERS_CHANGED_ACTION));
     }
 
     @Override
@@ -196,6 +210,105 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
     }
+
+    Context context = getBaseContext();
+
+
+
+
+    void checkGPSEnable(){
+
+        LocationManager lm = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        boolean gps_enabled = false;
+        boolean network_enabled = false;
+
+        try {
+            gps_enabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        } catch(Exception ex) {
+
+        }
+
+        try {
+            network_enabled = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch(Exception ex) {}
+
+        if(!gps_enabled && !network_enabled) {
+            // notify user
+            AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+            dialog.setMessage(getResources().getString(R.string.gps_network_not_enabled));
+            dialog.setPositiveButton(getResources().getString(R.string.open_location_settings), new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                    // TODO Auto-generated method stub
+                    Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    startActivity(myIntent);
+                    //get gps
+                }
+            });
+            dialog.setNegativeButton(getString(R.string.Cancel), new DialogInterface.OnClickListener() {
+
+                @Override
+                public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                    // TODO Auto-generated method stub
+
+                }
+            });
+            dialog.show();
+        }
+
+    }
+
+    private void showGpsAlert(){
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this);
+        dialog.setMessage(getResources().getString(R.string.gps_network_not_enabled));
+        dialog.setPositiveButton(getResources().getString(R.string.open_location_settings), new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                // TODO Auto-generated method stub
+                Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivity(myIntent);
+                //get gps
+            }
+        });
+        dialog.setNegativeButton(getString(R.string.Cancel), new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface paramDialogInterface, int paramInt) {
+                // TODO Auto-generated method stub
+
+            }
+        });
+        dialog.show();
+    }
+
+    private boolean isGpsEnabled(){
+        boolean status = false;
+        try{
+            LocationManager manager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            boolean isNetwork = manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+            boolean isGPS = manager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            Log.e(TAG, "IsNetwork = " + (isNetwork ? "true" : "false"));
+            Log.e(TAG, "IsGPS = " + (isGPS ? "true" : "false"));
+            status = isGPS | isNetwork;
+        }catch (Exception e){e.printStackTrace();}
+        return status;
+    }
+
+    private BroadcastReceiver gpsStatusReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            if (intent.getAction().matches(LocationManager.PROVIDERS_CHANGED_ACTION)) {
+                // Make an action or refresh an already managed state.
+                try{
+                    if(!isGpsEnabled()){
+                        finish();
+                    }
+                }catch (Exception e){e.printStackTrace();}
+            }
+        }
+    };
+
 
 
 }

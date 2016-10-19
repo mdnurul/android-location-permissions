@@ -1,4 +1,12 @@
 <resources>
     <string name="app_name">MyApplicationLocationPermission</string>
     <string name="action_settings">Settings</string>
+
+    <string name="gps_network_not_enabled">GPS device not enabled</string>
+    <string name="open_location_settings">Open location Settings</string>
+    <string name="Cancel">Cancel</string>
+
+
+
+
 </resources>
